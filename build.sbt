@@ -1,6 +1,6 @@
 // sbt dependencyUpdates
 
-name := "app-skel"
+name := "template-wizard"
 version := "0.1.0"
 scalaVersion := "2.12.2"
 scalacOptions := Seq("-unchecked", "-deprecation", "-Xexperimental", "-feature")

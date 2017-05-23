@@ -41,33 +41,37 @@ class AppMainSpec extends FunSpec with Checkers {
     it("should handle case of a single substitution") {
       val input = "a SomeClass someclass SOMECLASS some_class some-class SOME_CLASS someClass"
       val expected = "a AnoTherThing anotherthing ANOTHERTHING ano_ther_thing ano-ther-thing ANO_THER_THING anoTherThing"
-      assertResult(expected)(AppMain.expand(Array(("SomeClass", "AnoTherThing")), input))
+      val substitutions = Array(("SomeClass", "AnoTherThing"))
+      assertResult(expected)(AppMain.expand(AppMain.variantsOf(substitutions), input))
     }
 
     it("should handle case of two substitutions") {
-      val input = "a SomeClass someclass SOMECLASS some_class some-class SOME_CLASS someClass " +
-        "a AThirdElement athirdelement ATHIRDELEMENT a_third_element a-third-element A_THIRD_ELEMENT aThirdElement"
-      val expected = "a AnoTherThing anotherthing ANOTHERTHING ano_ther_thing ano-ther-thing ANO_THER_THING anoTherThing " +
-        "a SecondExpected secondexpected SECONDEXPECTED second_expected second-expected SECOND_EXPECTED secondExpected"
+      val input =
+        "a SomeClass someclass SOMECLASS some_class some-class SOME_CLASS someClass " +
+          "a AThirdElement athirdelement ATHIRDELEMENT a_third_element a-third-element A_THIRD_ELEMENT aThirdElement"
+      val expected =
+        "a AnoTherThing anotherthing ANOTHERTHING ano_ther_thing ano-ther-thing ANO_THER_THING anoTherThing " +
+          "a SecondExpected secondexpected SECONDEXPECTED second_expected second-expected SECOND_EXPECTED secondExpected"
 
       assertResult(expected) {
-        AppMain.expand(Array(("SomeClass", "AnoTherThing"), ("AThirdElement", "SecondExpected")), input)
+        val substitutions = Array(("SomeClass", "AnoTherThing"), ("AThirdElement", "SecondExpected"))
+        AppMain.expand(AppMain.variantsOf(substitutions), input)
       }
     }
 
     it("should handle case of three substitutions") {
-      val input = "a SomeClass someclass SOMECLASS some_class some-class SOME_CLASS someClass " +
-        "a AThirdElement athirdelement ATHIRDELEMENT a_third_element a-third-element A_THIRD_ELEMENT aThirdElement" +
-        "a FthE fthe FTHE fth_e fth-e FTH_E fthE"
-      val expected = "a AnoTherThing anotherthing ANOTHERTHING ano_ther_thing ano-ther-thing ANO_THER_THING anoTherThing " +
-        "a SecondExpected secondexpected SECONDEXPECTED second_expected second-expected SECOND_EXPECTED secondExpected" +
-        "a FhQ fhq FHQ fh_q fh-q FH_Q fhQ"
+      val input =
+        "a SomeClass someclass SOMECLASS some_class some-class SOME_CLASS someClass " +
+          "a AThirdElement athirdelement ATHIRDELEMENT a_third_element a-third-element A_THIRD_ELEMENT aThirdElement" +
+          "a FthE fthe FTHE fth_e fth-e FTH_E fthE"
+      val expected =
+        "a AnoTherThing anotherthing ANOTHERTHING ano_ther_thing ano-ther-thing ANO_THER_THING anoTherThing " +
+          "a SecondExpected secondexpected SECONDEXPECTED second_expected second-expected SECOND_EXPECTED secondExpected" +
+          "a FhQ fhq FHQ fh_q fh-q FH_Q fhQ"
 
       assertResult(expected) {
-        AppMain.expand(
-          Array(("SomeClass", "AnoTherThing"), ("AThirdElement", "SecondExpected"), ("FthE", "FhQ")),
-          input
-        )
+        val substitutions = Array(("SomeClass", "AnoTherThing"), ("AThirdElement", "SecondExpected"), ("FthE", "FhQ"))
+        AppMain.expand(AppMain.variantsOf(substitutions), input)
       }
     }
   }

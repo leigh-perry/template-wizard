@@ -1,9 +1,13 @@
 package lp.template.wizard
 
 import java.io.File
+import java.nio.file.Paths
 
 import com.twitter.app.{App, Flag}
+import fs2.{Task, io, text}
 import lp.template.common.Apps
+
+import scala.collection.immutable
 
 object AppMain extends App {
   val templateDir: Flag[String] = flag("-template-dir", "Directory to use as template")
@@ -26,9 +30,14 @@ object AppMain extends App {
     val destinationDirectory = destinationDir()
     val substs: Array[(String, String)] = splitPairs(substitutions())
 
-    val inputDirLength = inputDir.length
+    val substVariants: Array[(String, String)] = variantsOf(substs)
 
-    val files = recursiveFileObjects(new File(inputDir))
+    val inputDirFile = new File(inputDir)
+    val parentDir = inputDirFile.getParent
+    val inputDirLength = parentDir.length + 1
+
+    // Get list of input filepaths plus their output filepaths
+    val files = recursiveFileObjects(inputDirFile)
     val filesFromTo =
       files.map {
         file => {
@@ -45,11 +54,38 @@ object AppMain extends App {
               s"$destinationDirectory/$filename"
             }
 
-          val outputPathRelativeDirExpanded = expand(substs, outputPathRelativeDir)
-          println((inputFilepath, outputPathRelativeDirExpanded))
+          // Output filepath is
+          val outputPathRelativeDirExpanded = expand(substVariants, outputPathRelativeDir)
           (inputFilepath, outputPathRelativeDirExpanded)
         }
       }
+
+    val tasks: Seq[(String, Task[Unit])] =
+      filesFromTo
+        .map {
+          case (from, to) => {
+            val task =
+              io.file.readAll[Task](Paths.get(from), 4096)
+                .through(text.utf8Decode)
+                .through(text.lines)
+                .map(line => expand(substVariants, line))
+                .intersperse("\n")
+                .through(text.utf8Encode)
+                .through {
+                  ensureDirectoryExists(new File(to).getParent)
+                  io.file.writeAll(Paths.get(to))
+                }
+                .run
+            (to, task)
+          }
+        }
+
+    tasks.foreach {
+      case (filepath, step) => {
+        step.unsafeRun()
+        println(s"  $filepath")
+      }
+    }
   }
 
   def splitPairs(s: String): Array[(String, String)] = {
@@ -72,8 +108,8 @@ object AppMain extends App {
   }
 
   val dirIgnoreSuffixes = Array(".git")
-  val fileIgnoreSuffixes = Array(".DS_Store")
 
+  val fileIgnoreSuffixes = Array(".DS_Store")
   def recursiveFileObjects(dir: File): List[File] = {
     var result = List[File]()
 
@@ -107,28 +143,44 @@ object AppMain extends App {
     false
   }
 
+  /**
+    * Apply all replacements to specified string
+    */
   def expand(substs: Array[(String, String)], s: String) = {
-    val substVariants =
-      substs
-        .flatMap(variantsOf(_))
-
-    substVariants.foldLeft(s) {
+    substs.foldLeft(s) {
       case (result, (from, to)) =>
         result.replaceAll(from, to)
     }
   }
 
-  def variantsOf(fromTo: (String, String)): Array[(String, String)] = {
-    val from = fromTo._1
-    val to = fromTo._2
+  def variantsOf(substs: Array[(String, String)]) = {
+    substs
+      .flatMap {
+        fromTo => {
+          val from = fromTo._1
+          val to = fromTo._2
 
-    val lowerCase = (from.toLowerCase, to.toLowerCase)
-    val upperCase = (from.toUpperCase, to.toUpperCase)
-    val snakeCase = (Ascii.classToSnakeCase(from), Ascii.classToSnakeCase(to))
-    val snakeUpperCase = (Ascii.classToSnakeUpperCase(from), Ascii.classToSnakeUpperCase(to))
-    val snakeMinusCase = (Ascii.classToMinusSnakeCase(from), Ascii.classToMinusSnakeCase(to))
-    val methodCase = (Ascii.classToMethodCase(from), Ascii.classToMethodCase(to))
-    Array(fromTo, lowerCase, upperCase, snakeCase, snakeUpperCase, snakeMinusCase, methodCase)
+          val lowerCase = (from.toLowerCase, to.toLowerCase)
+          val upperCase = (from.toUpperCase, to.toUpperCase)
+          val snakeCase = (Ascii.classToSnakeCase(from), Ascii.classToSnakeCase(to))
+          val snakeUpperCase = (Ascii.classToSnakeUpperCase(from), Ascii.classToSnakeUpperCase(to))
+          val snakeMinusCase = (Ascii.classToMinusSnakeCase(from), Ascii.classToMinusSnakeCase(to))
+          val methodCase = (Ascii.classToMethodCase(from), Ascii.classToMethodCase(to))
+
+          Array(fromTo, lowerCase, upperCase, snakeCase, snakeUpperCase, snakeMinusCase, methodCase)
+        }
+      }
+  }
+
+  def ensureDirectoryExists(dir: String): Unit = {
+    val dirFile = new File(dir)
+    if (!dirFile.exists) {
+      val ok = dirFile.mkdirs
+      if (!ok) {
+        throw new RuntimeException(s"Could not create dir [$dir]")
+      }
+
+      dirFile.setWritable(true, false)
+    }
   }
 }
-

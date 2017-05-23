@@ -1,7 +1,8 @@
 // sbt dependencyUpdates
 
 name := "template-wizard"
-version := "0.1.0"
+version := "1.0.0"
+
 scalaVersion := "2.12.2"
 scalacOptions := Seq("-unchecked", "-deprecation", "-Xexperimental", "-feature")
 

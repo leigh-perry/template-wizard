@@ -41,4 +41,13 @@ object TestProperties extends FunSpec with Checkers {
       invalidPicks = anotherList.filterNot(i => validKeys.contains(i))
     } yield (pairs, invalidPicks)
   }
+
+  def genPicksAlpha: Gen[(Map[String, String], List[String])] = {
+    for {
+      pairs <- nonEmptyMap[String, String](genNonEmptyAlphaPair)
+      validKeys = pairs.keySet
+      anotherList <- listOf(genNonEmptyAlpha)
+      invalidPicks = anotherList.filterNot(i => validKeys.contains(i))
+    } yield (pairs, invalidPicks)
+  }
 }

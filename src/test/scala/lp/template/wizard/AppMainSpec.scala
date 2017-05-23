@@ -3,6 +3,7 @@ package lp.template.wizard
 import lp.template.testsupport.TestProperties
 import lp.template.testsupport.TestProperties._
 import org.scalacheck.Arbitrary._
+import org.scalacheck.Gen
 import org.scalacheck.Gen._
 import org.scalacheck.Prop._
 import org.scalatest.FunSpec
@@ -15,16 +16,35 @@ class AppMainSpec extends FunSpec with Checkers {
         forAll(
           for {
             prefix <- genNonEmptyAlpha
-            (mapValidPicks, invalidPicks) <- genPicks[String, String]
-          } yield (prefix, mapValidPicks, invalidPicks)
+            validPicks <- listOf(TestProperties.genNonEmptyAlpha)
+          } yield (prefix, validPicks)
         ) {
-          case (prefix, mapValidPicks, invalidPicks) =>
-            val validPicks = mapValidPicks.keys.toArray
-
-            validPicks.forall(validPick => AppMain.shouldIgnore(s"$prefix/$validPick", validPicks)) &&
-              invalidPicks.forall(invalidPick => !AppMain.shouldIgnore(s"$prefix/$invalidPick", validPicks))
+          case (prefix, ignorables) =>
+            ignorables.forall {
+              validPick =>
+                AppMain.shouldIgnore(s"$prefix/$validPick", ignorables.toArray)
+            }
         }
       }
+    }
+
+    it("should not ignore specific directories and files that don't match suffix") {
+//      check {
+//        forAll(
+//          for {
+//            prefix <- genNonEmptyAlpha
+//            (mapValidPicks, invalidPicks) <- genPicksAlpha
+//          } yield (prefix, mapValidPicks, invalidPicks)
+//        ) {
+//          case (prefix, mapValidPicks, nonignorables) =>
+//            val ignorables = mapValidPicks.keys.toArray
+//
+//            nonignorables.forall {
+//              suffix =>
+//                !AppMain.shouldIgnore(s"$prefix/$suffix", ignorables)
+//            }
+//        }
+//      }
     }
   }
 

@@ -7,7 +7,7 @@ import com.twitter.app.{App, Flag}
 import fs2.{Task, io, text}
 import lp.template.common.Apps
 
-import scala.collection.immutable
+import scala.collection.mutable
 
 object AppMain extends App {
   val templateDir: Flag[String] = flag("-template-dir", "Directory to use as template")
@@ -17,7 +17,16 @@ object AppMain extends App {
 
   def main(): Unit = {
     try {
-      runApp()
+      // Build tasks to execute
+      val tasks: Seq[(String, Task[Unit])] = executionPlan
+
+      // Execute them
+      tasks.foreach {
+        case (filepath, step) => {
+          step.unsafeRun()
+          println(s"  $filepath")
+        }
+      }
     }
     catch {
       case e: Exception =>
@@ -25,7 +34,7 @@ object AppMain extends App {
     }
   }
 
-  private def runApp() = {
+  private def executionPlan = {
     val inputDir = templateDir()
     val destinationDirectory = destinationDir()
     val substs: Array[(String, String)] = splitPairs(substitutions())
@@ -79,13 +88,7 @@ object AppMain extends App {
             (to, task)
           }
         }
-
-    tasks.foreach {
-      case (filepath, step) => {
-        step.unsafeRun()
-        println(s"  $filepath")
-      }
-    }
+    tasks
   }
 
   def splitPairs(s: String): Array[(String, String)] = {
@@ -97,7 +100,7 @@ object AppMain extends App {
     }
   }
 
-  def fromTo(s: String): (String, String) = {
+  private def fromTo(s: String): (String, String) = {
     val trimmed = s.trim
     val terms = trimmed.split("=")
     if (terms.length != 2) {
@@ -107,11 +110,12 @@ object AppMain extends App {
     (terms(0), terms(1))
   }
 
-  val dirIgnoreSuffixes = Array(".git")
+  private val dirIgnoreSuffixes = Array("/.git", "/target", "/.idea", "/.gradle", "/build", "/classes")
 
-  val fileIgnoreSuffixes = Array(".DS_Store")
-  def recursiveFileObjects(dir: File): List[File] = {
-    var result = List[File]()
+  private val fileIgnoreSuffixes = Array("/.DS_Store", ".jar", ".class")
+
+  private def recursiveFileObjects(dir: File): Seq[File] = {
+    var result = mutable.Buffer[File]()
 
     val filesAndDirs = dir.listFiles
     if (filesAndDirs == null) {
@@ -123,11 +127,11 @@ object AppMain extends App {
       if (!file.isFile) {
         // Must be a directory - recurse
         if (!shouldIgnore(path, dirIgnoreSuffixes)) {
-          result = result ::: recursiveFileObjects(file)
+          result ++= recursiveFileObjects(file)
         }
       }
       else if (!shouldIgnore(path, fileIgnoreSuffixes)) {
-        result = result :+ file
+        result += file
       }
     }
 
@@ -135,12 +139,8 @@ object AppMain extends App {
   }
 
   def shouldIgnore(path: String, ignoreSuffixes: Array[String]): Boolean = {
-    for (suffix <- ignoreSuffixes)
-      if (path.endsWith(s"/$suffix")) {
-        return true
-      }
-
-    false
+    ignoreSuffixes
+      .exists(path.endsWith(_))
   }
 
   /**
@@ -172,7 +172,7 @@ object AppMain extends App {
       }
   }
 
-  def ensureDirectoryExists(dir: String): Unit = {
+  private def ensureDirectoryExists(dir: String): Unit = {
     val dirFile = new File(dir)
     if (!dirFile.exists) {
       val ok = dirFile.mkdirs

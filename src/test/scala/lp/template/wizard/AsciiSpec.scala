@@ -27,7 +27,7 @@ class AsciiSpec extends FunSpec with Checkers {
       check {
         forAll {
           for {
-            w <- nonEmptyListOf(genWord)
+            w <- nonEmptyListOf(genTerm)
             c <- alphaLowerChar
           } yield (
             w.map(_ + c).mkString, // WordxClassx
@@ -44,9 +44,9 @@ class AsciiSpec extends FunSpec with Checkers {
       check {
         forAll {
           for {
-            w <- nonEmptyListOf(genWordPlusLower)
+            w <- nonEmptyListOf(genTerm)
             c <- alphaLowerChar
-          } yield (w.map(_._1 + c).mkString, w.map(_._2 + c).mkString("-"))
+          } yield (w.map(_ + c).mkString, w.map(_.toLowerCase + c).mkString("-"))
         } {
           case (classCase, snakeCase) =>
             Ascii.classToMinusSnakeCase(classCase) ?= snakeCase
@@ -58,9 +58,9 @@ class AsciiSpec extends FunSpec with Checkers {
       check {
         forAll {
           for {
-            w <- nonEmptyListOf(genWordPlusLower)
+            w <- nonEmptyListOf(genTerm)
             c <- alphaLowerChar
-          } yield (w.map(_._1 + c).mkString, w.map(_._2 + c).mkString("_").toUpperCase())
+          } yield (w.map(_ + c).mkString, w.map(_.toLowerCase + c).mkString("_").toUpperCase())
         } {
           case (classCase, snakeCase) =>
             Ascii.classToSnakeUpperCase(classCase) ?= snakeCase
@@ -72,9 +72,9 @@ class AsciiSpec extends FunSpec with Checkers {
       check {
         forAll {
           for {
-            w <- nonEmptyListOf(genWordPlusLower)
+            w <- nonEmptyListOf(genTerm)
             c <- alphaLowerChar
-          } yield w.map(_._1 + c).mkString
+          } yield w.map(_ + c).mkString
         } {
           (classCase: String) =>
             val method = Ascii.classToMethodCase(classCase)

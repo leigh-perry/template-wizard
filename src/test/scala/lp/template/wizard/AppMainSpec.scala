@@ -50,7 +50,7 @@ class AppMainSpec extends FunSpec with Checkers {
   describe("String variants") {
     it("should include full set for multiple terms") {
       check {
-        forAll(genTwoTermWord :| "from", genTwoTermWord :| "to") {
+        forAll(genTwoTerm :| "from", genTwoTerm :| "to") {
           (from, to) =>
             val variants = AppMain.variantsOf(Array((from, to)))
             variants.deep ?= AppMain.rawVariants(from, to).deep
@@ -60,7 +60,7 @@ class AppMainSpec extends FunSpec with Checkers {
 
     it("should include reduced set for single terms of two or more chars") {
       check {
-        forAll(genWord.suchThat(_.length > 1) :| "term 1", genWord.suchThat(_.length > 1) :| "term 2") {
+        forAll(genTerm.suchThat(_.length > 1) :| "term 1", genTerm.suchThat(_.length > 1) :| "term 2") {
           (from, to) =>
             val variants = AppMain.variantsOf(Array((from, to)))
             val lowerCase = (from.toLowerCase, to.toLowerCase)

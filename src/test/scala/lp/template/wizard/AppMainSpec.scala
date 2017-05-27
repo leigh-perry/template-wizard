@@ -143,7 +143,7 @@ class AppMainSpec extends FunSpec with Checkers {
           case (from, to) =>
             val pairs = AppMain.splitPairs(s"$from=$to")
             all(
-              (pairs.length ?= 12) :| "pair length",
+              (pairs.length ?= 1) :| "pair length",
               (pairs(0) ?= (from, to)) :| "pair contents"
             )
         }

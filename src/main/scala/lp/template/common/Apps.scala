@@ -36,4 +36,8 @@ object Apps {
     e.printStackTrace(pw)
     sw.toString
   }
+
+  def arrayToString[T](a:Array[T] ) : String = {
+    s"[${a.mkString(",")}]"
+  }
 }

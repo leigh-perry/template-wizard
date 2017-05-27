@@ -12,6 +12,8 @@ sbt assembly
 
 ## Usage
 ```
-java -jar target/scala-2.12/template-wizard-assembly-1.0.0.jar --template-dir /Users/lperry/dev/lp/dark-matter --destination-dir /Users/lperry/temp --substitutions "DarkMatter=WombatVille,MpscQueue=Mpscq"
+java -jar target/scala-2.12/template-wizard-assembly-1.0.0.jar \
+    --template-dir /Users/lperry/dev/lp/console-app-template \
+    --destination-dir /Users/lperry/temp \
+    --substitutions "SomeApplication=AnotherApp,SomeFifo=MpscQueue,ContextName=CorrelationId"
 ```
-

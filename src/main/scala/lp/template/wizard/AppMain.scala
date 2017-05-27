@@ -18,9 +18,17 @@ object AppMain extends App {
   def main(): Unit = {
     try {
       // Build tasks to execute
-      val tasks: Seq[(String, Task[Unit])] = executionPlan
+      val (substVariants, tasks) = executionPlan
+
+      println("translating...")
+      substVariants
+        .foreach {
+          case (from, to) =>
+            println(s"  $from => $to")
+        }
 
       // Execute them
+      println("generating...")
       tasks.foreach {
         case (filepath, step) => {
           step.unsafeRun()
@@ -34,7 +42,7 @@ object AppMain extends App {
     }
   }
 
-  private def executionPlan = {
+  private def executionPlan: (Array[(String, String)], Seq[(String, Task[Unit])]) = {
     val inputDir = templateDir()
     val destinationDirectory = destinationDir()
     val substs: Array[(String, String)] = splitPairs(substitutions())
@@ -88,7 +96,7 @@ object AppMain extends App {
             (to, task)
           }
         }
-    tasks
+    (substVariants, tasks)
   }
 
   def splitPairs(s: String): Array[(String, String)] = {
@@ -156,20 +164,21 @@ object AppMain extends App {
   def variantsOf(substs: Array[(String, String)]) = {
     substs
       .flatMap {
-        fromTo => {
-          val from = fromTo._1
-          val to = fromTo._2
-
-          val lowerCase = (from.toLowerCase, to.toLowerCase)
-          val upperCase = (from.toUpperCase, to.toUpperCase)
-          val snakeCase = (Ascii.classToSnakeCase(from), Ascii.classToSnakeCase(to))
-          val snakeUpperCase = (Ascii.classToSnakeUpperCase(from), Ascii.classToSnakeUpperCase(to))
-          val snakeMinusCase = (Ascii.classToMinusSnakeCase(from), Ascii.classToMinusSnakeCase(to))
-          val methodCase = (Ascii.classToMethodCase(from), Ascii.classToMethodCase(to))
-
-          Array(fromTo, lowerCase, upperCase, snakeCase, snakeUpperCase, snakeMinusCase, methodCase)
+        case (from, to) => {
+          rawVariants(from, to)
         }
-      }
+      }.distinct
+  }
+
+  def rawVariants(from: String, to: String) = {
+    val lowerCase = (from.toLowerCase, to.toLowerCase)
+    val upperCase = (from.toUpperCase, to.toUpperCase)
+    val snakeCase = (Ascii.classToSnakeCase(from), Ascii.classToSnakeCase(to))
+    val snakeUpperCase = (Ascii.classToSnakeUpperCase(from), Ascii.classToSnakeUpperCase(to))
+    val snakeMinusCase = (Ascii.classToMinusSnakeCase(from), Ascii.classToMinusSnakeCase(to))
+    val methodCase = (Ascii.classToMethodCase(from), Ascii.classToMethodCase(to))
+
+    Array((from, to), lowerCase, upperCase, snakeCase, snakeUpperCase, snakeMinusCase, methodCase)
   }
 
   private def ensureDirectoryExists(dir: String): Unit = {

@@ -6,13 +6,33 @@ import org.scalacheck.Gen._
 import org.scalatest.FunSpec
 import org.scalatest.prop.Checkers
 
-object TestProperties extends FunSpec with Checkers {
-  def singleCondition: Gen[Int] = {
-    choose(0, 0)
+object TestProperties {
+  object ArbitraryImplicits {
+    //implicit val arbNonEmptyAlphaPair: Arbitrary[(String, String)] = Arbitrary(genNonEmptyAlphaPair)
+  }
+
+  def genWord: Gen[String] = {
+    for {
+      c <- alphaUpperChar
+      cs <- resize(4, listOf(alphaLowerStr))
+    } yield (c :: cs).mkString
+  }
+
+  def genTwoTermWord: Gen[String] = {
+    for {
+      w0 <- genWord
+      w1 <- genWord
+    } yield w0 + w1
+  }
+
+  def genWordPlusLower: Gen[(String, String)] = {
+    for {
+      s <- genWord
+    } yield (s, s.toLowerCase)
   }
 
   def genNonEmptyAlpha = {
-    alphaStr.filter(_.length > 0)
+    alphaStr.suchThat(_.length > 0)
   }
 
   def genNonEmptyAlphaPair: Gen[(String, String)] = {
@@ -38,7 +58,7 @@ object TestProperties extends FunSpec with Checkers {
       pairs <- arbitrary[Map[A, B]]
       validKeys = pairs.keySet
       anotherList <- listOf(arbitrary[A])
-      invalidPicks = anotherList.filterNot(i => validKeys.contains(i))
+      invalidPicks = anotherList.filterNot((i: A) => validKeys.contains(i))
     } yield (pairs, invalidPicks)
   }
 

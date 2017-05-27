@@ -1,23 +1,12 @@
 package lp.template.wizard
 
-import org.scalacheck.Gen
+import lp.template.testsupport.TestProperties._
 import org.scalacheck.Gen._
 import org.scalacheck.Prop._
 import org.scalatest.FunSpec
 import org.scalatest.prop.Checkers
 
 class AsciiSpec extends FunSpec with Checkers {
-  /**
-    * @return eg (Someword, someword)
-    */
-  def genWord: Gen[(String, String)] = {
-    for {
-      c <- alphaUpperChar
-      cs <- resize(4, listOf(alphaLowerStr))
-      s = (c :: cs).mkString
-    } yield (s, s.toLowerCase)
-  }
-
   describe("ASCII conversion") {
     it("should handle JavaClass 1+ char words to snake_case") {
       assertResult("a_cd_ef")(Ascii.classToSnakeCase("ACdEf"))
@@ -40,10 +29,13 @@ class AsciiSpec extends FunSpec with Checkers {
           for {
             w <- nonEmptyListOf(genWord)
             c <- alphaLowerChar
-          } yield (w.map(_._1 + c).mkString, w.map(_._2 + c).mkString("_"))
+          } yield (
+            w.map(_ + c).mkString, // WordxClassx
+            w.map(_ + c).map(_.toLowerCase).mkString("_") // wordx_classx
+          )
         } {
           case (classCase, snakeCase) =>
-            Ascii.classToSnakeCase(classCase) == snakeCase
+            Ascii.classToSnakeCase(classCase) ?= snakeCase
         }
       }
     }
@@ -52,12 +44,12 @@ class AsciiSpec extends FunSpec with Checkers {
       check {
         forAll {
           for {
-            w <- nonEmptyListOf(genWord)
+            w <- nonEmptyListOf(genWordPlusLower)
             c <- alphaLowerChar
           } yield (w.map(_._1 + c).mkString, w.map(_._2 + c).mkString("-"))
         } {
           case (classCase, snakeCase) =>
-            Ascii.classToMinusSnakeCase(classCase) == snakeCase
+            Ascii.classToMinusSnakeCase(classCase) ?= snakeCase
         }
       }
     }
@@ -66,12 +58,12 @@ class AsciiSpec extends FunSpec with Checkers {
       check {
         forAll {
           for {
-            w <- nonEmptyListOf(genWord)
+            w <- nonEmptyListOf(genWordPlusLower)
             c <- alphaLowerChar
           } yield (w.map(_._1 + c).mkString, w.map(_._2 + c).mkString("_").toUpperCase())
         } {
           case (classCase, snakeCase) =>
-            Ascii.classToSnakeUpperCase(classCase) == snakeCase
+            Ascii.classToSnakeUpperCase(classCase) ?= snakeCase
         }
       }
     }
@@ -80,14 +72,16 @@ class AsciiSpec extends FunSpec with Checkers {
       check {
         forAll {
           for {
-            w <- nonEmptyListOf(genWord)
+            w <- nonEmptyListOf(genWordPlusLower)
             c <- alphaLowerChar
           } yield w.map(_._1 + c).mkString
         } {
-          classCase =>
+          (classCase: String) =>
             val method = Ascii.classToMethodCase(classCase)
-            method.charAt(0) == classCase.charAt(0).toLower &&
-              classCase.substring(1) == method.substring(1)
+            all(
+              (method.charAt(0) ?= classCase.charAt(0).toLower) :| "first char lower case",
+              (classCase.substring(1) ?= method.substring(1)) :| "remaining chars unchanged"
+            )
         }
       }
     }

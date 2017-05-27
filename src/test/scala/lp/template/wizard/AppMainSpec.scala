@@ -2,8 +2,6 @@ package lp.template.wizard
 
 import lp.template.testsupport.TestProperties
 import lp.template.testsupport.TestProperties._
-import org.scalacheck.Arbitrary._
-import org.scalacheck.Gen
 import org.scalacheck.Gen._
 import org.scalacheck.Prop._
 import org.scalatest.FunSpec
@@ -19,7 +17,7 @@ class AppMainSpec extends FunSpec with Checkers {
             validPicks <- listOf(TestProperties.genNonEmptyAlpha)
           } yield (prefix, validPicks)
         ) {
-          case (prefix, ignorables) =>
+          case (prefix: String, ignorables: Seq[String]) =>
             ignorables.forall {
               validPick =>
                 AppMain.shouldIgnore(s"$prefix/$validPick", ignorables.toArray)
@@ -29,22 +27,60 @@ class AppMainSpec extends FunSpec with Checkers {
     }
 
     it("should not ignore specific directories and files that don't match suffix") {
-//      check {
-//        forAll(
-//          for {
-//            prefix <- genNonEmptyAlpha
-//            (mapValidPicks, invalidPicks) <- genPicksAlpha
-//          } yield (prefix, mapValidPicks, invalidPicks)
-//        ) {
-//          case (prefix, mapValidPicks, nonignorables) =>
-//            val ignorables = mapValidPicks.keys.toArray
-//
-//            nonignorables.forall {
-//              suffix =>
-//                !AppMain.shouldIgnore(s"$prefix/$suffix", ignorables)
-//            }
-//        }
-//      }
+      // TODO express this
+      //      check {
+      //        forAll(
+      //          for {
+      //            prefix <- genNonEmptyAlpha
+      //            (mapValidPicks, invalidPicks) <- genPicksAlpha
+      //          } yield (prefix, mapValidPicks, invalidPicks)
+      //        ) {
+      //          case (prefix, mapValidPicks, nonignorables) =>
+      //            val ignorables = mapValidPicks.keys.toArray
+      //
+      //            nonignorables.forall {
+      //              suffix =>
+      //                !AppMain.shouldIgnore(s"$prefix/$suffix", ignorables)
+      //            }
+      //        }
+      //      }
+    }
+  }
+
+  describe("String variants") {
+    it("should include full set for multiple terms") {
+      check {
+        forAll(genTwoTermWord :| "from", genTwoTermWord :| "to") {
+          (from, to) =>
+            val variants = AppMain.variantsOf(Array((from, to)))
+            variants.deep ?= AppMain.rawVariants(from, to).deep
+        }
+      }
+    }
+
+    it("should include reduced set for single terms of two or more chars") {
+      check {
+        forAll(genWord.suchThat(_.length > 1) :| "term 1", genWord.suchThat(_.length > 1) :| "term 2") {
+          (from, to) =>
+            val variants = AppMain.variantsOf(Array((from, to)))
+            val lowerCase = (from.toLowerCase, to.toLowerCase)
+            val upperCase = (from.toUpperCase, to.toUpperCase)
+            val expected = Array((from, to), lowerCase, upperCase)
+            variants.deep ?= expected.deep
+        }
+      }
+    }
+
+    it("should include reduced set for single terms of 1 char") {
+      check {
+        forAll(alphaUpperChar.map(_.toString), alphaUpperChar.map(_.toString)) {
+          (from, to) =>
+            val variants = AppMain.variantsOf(Array((from, to)))
+            val lowerCase = (from.toLowerCase, to.toLowerCase)
+            val expected = Array((from, to), lowerCase)
+            variants.deep ?= expected.deep
+        }
+      }
     }
   }
 
@@ -53,7 +89,7 @@ class AppMainSpec extends FunSpec with Checkers {
       check {
         forAll(alphaStr) {
           s =>
-            s == AppMain.expand(Array(), s)
+            s =? AppMain.expand(Array(), s)
         }
       }
     }
@@ -98,13 +134,7 @@ class AppMainSpec extends FunSpec with Checkers {
 
   describe("Substitution argument handling") {
     it("should handle empty string") {
-      check {
-        forAll(singleCondition) {
-          x =>
-            val pairs: Array[(String, String)] = AppMain.splitPairs("")
-            pairs.length == 0
-        }
-      }
+      assertResult(0)(AppMain.splitPairs("").length)
     }
 
     it("should handle a single substitution") {
@@ -112,7 +142,10 @@ class AppMainSpec extends FunSpec with Checkers {
         forAll(genNonEmptyAlphaPair) {
           case (from, to) =>
             val pairs = AppMain.splitPairs(s"$from=$to")
-            pairs.length == 1 && pairs(0) == (from, to)
+            all(
+              (pairs.length ?= 12) :| "pair length",
+              (pairs(0) ?= (from, to)) :| "pair contents"
+            )
         }
       }
     }
@@ -122,7 +155,7 @@ class AppMainSpec extends FunSpec with Checkers {
         forAll(genTwoOrMoreStringPairs) {
           inputPairs: List[(String, String)] =>
             val s = asString(inputPairs)
-            inputPairs == AppMain.splitPairs(s).toList
+            inputPairs =? AppMain.splitPairs(s).toList
         }
       }
     }

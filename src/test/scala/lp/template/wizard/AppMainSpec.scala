@@ -1,6 +1,5 @@
 package lp.template.wizard
 
-import lp.template.testsupport.TestProperties
 import lp.template.testsupport.TestProperties._
 import org.scalacheck.Gen._
 import org.scalacheck.Prop._
@@ -9,76 +8,43 @@ import org.scalatest.prop.Checkers
 
 class AppMainSpec extends FunSpec with Checkers {
   describe("File scanning") {
-    it("should ignore specific directories and files by matching suffix") {
+    it("should ignore by matching suffix") {
       check {
         forAll(
           for {
             prefix <- genNonEmptyAlpha
-            validPicks <- listOf(TestProperties.genNonEmptyAlpha)
-          } yield (prefix, validPicks)
+            ignorables <- listOf(genNonEmptyAlpha)
+          } yield (prefix, ignorables)
         ) {
           case (prefix: String, ignorables: Seq[String]) =>
             ignorables.forall {
-              validPick =>
-                AppMain.shouldIgnore(s"$prefix/$validPick", ignorables.toArray)
+              suffix =>
+                AppMain.shouldIgnore(s"$prefix/$suffix", ignorableSuffixesOf(ignorables))
             }
         }
       }
     }
 
-    it("should not ignore specific directories and files that don't match suffix") {
-      // TODO express this
-      //      check {
-      //        forAll(
-      //          for {
-      //            prefix <- genNonEmptyAlpha
-      //            (mapValidPicks, invalidPicks) <- genPicksAlpha
-      //          } yield (prefix, mapValidPicks, invalidPicks)
-      //        ) {
-      //          case (prefix, mapValidPicks, nonignorables) =>
-      //            val ignorables = mapValidPicks.keys.toArray
-      //
-      //            nonignorables.forall {
-      //              suffix =>
-      //                !AppMain.shouldIgnore(s"$prefix/$suffix", ignorables)
-      //            }
-      //        }
-      //      }
-    }
-  }
-
-  describe("String variants") {
-    it("should include full set for multiple terms") {
-      check {
-        forAll(genTwoTerm :| "from", genTwoTerm :| "to") {
-          (from, to) =>
-            val variants = AppMain.variantsOf(Array((from, to)))
-            variants.deep ?= AppMain.rawVariants(from, to).deep
+    it("should not ignore non-matching suffix") {
+      def picks(prefix: String) = {
+        genPicksAlpha.suchThat {
+          case (_, ignorables) => !ignorables.contains(prefix)
         }
       }
-    }
 
-    it("should include reduced set for single terms of two or more chars") {
       check {
-        forAll(genTerm.suchThat(_.length > 1) :| "term 1", genTerm.suchThat(_.length > 1) :| "term 2") {
-          (from, to) =>
-            val variants = AppMain.variantsOf(Array((from, to)))
-            val lowerCase = (from.toLowerCase, to.toLowerCase)
-            val upperCase = (from.toUpperCase, to.toUpperCase)
-            val expected = Array((from, to), lowerCase, upperCase)
-            variants.deep ?= expected.deep
-        }
-      }
-    }
-
-    it("should include reduced set for single terms of 1 char") {
-      check {
-        forAll(alphaUpperChar.map(_.toString), alphaUpperChar.map(_.toString)) {
-          (from, to) =>
-            val variants = AppMain.variantsOf(Array((from, to)))
-            val lowerCase = (from.toLowerCase, to.toLowerCase)
-            val expected = Array((from, to), lowerCase)
-            variants.deep ?= expected.deep
+        forAll(
+          for {
+            prefix <- genNonEmptyAlpha
+            (validPicks, invalidPicks) <- picks(prefix)
+          } yield (prefix, validPicks, invalidPicks)
+        ) {
+          case (prefix, nonIgnorables: Map[String, String], ignorables: Seq[String]) =>
+            // "prefix/suffix"
+            nonIgnorables.keySet.forall {
+              suffix =>
+                !AppMain.shouldIgnore(s"$prefix/$suffix", ignorableSuffixesOf(ignorables))
+            }
         }
       }
     }
@@ -132,6 +98,43 @@ class AppMainSpec extends FunSpec with Checkers {
     }
   }
 
+  describe("String variants") {
+    it("should include full set for multiple terms") {
+      check {
+        forAll(genTwoTerm :| "from", genTwoTerm :| "to") {
+          (from, to) =>
+            val variants = AppMain.variantsOf(Array((from, to)))
+            variants.deep ?= AppMain.rawVariants(from, to).deep
+        }
+      }
+    }
+
+    it("should include reduced set for single terms of two or more chars") {
+      check {
+        forAll(genTerm.suchThat(_.length > 1) :| "term 1", genTerm.suchThat(_.length > 1) :| "term 2") {
+          (from, to) =>
+            val variants = AppMain.variantsOf(Array((from, to)))
+            val lowerCase = (from.toLowerCase, to.toLowerCase)
+            val upperCase = (from.toUpperCase, to.toUpperCase)
+            val expected = Array((from, to), lowerCase, upperCase)
+            variants.deep ?= expected.deep
+        }
+      }
+    }
+
+    it("should include reduced set for single terms of 1 char") {
+      check {
+        forAll(alphaUpperChar.map(_.toString), alphaUpperChar.map(_.toString)) {
+          (from, to) =>
+            val variants = AppMain.variantsOf(Array((from, to)))
+            val lowerCase = (from.toLowerCase, to.toLowerCase)
+            val expected = Array((from, to), lowerCase)
+            variants.deep ?= expected.deep
+        }
+      }
+    }
+  }
+
   describe("Substitution argument handling") {
     it("should handle empty string") {
       assertResult(0)(AppMain.splitPairs("").length)
@@ -167,5 +170,11 @@ class AppMainSpec extends FunSpec with Checkers {
         case (from, to) => s"$from=$to"
       }
       .mkString(",")
+  }
+
+  private[this] def ignorableSuffixesOf(ignorables: List[String]) = {
+    ignorables
+      .map(s => s"/$s")
+      .toArray
   }
 }

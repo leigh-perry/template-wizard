@@ -146,9 +146,9 @@ object AppMain extends App {
     result
   }
 
-  def shouldIgnore(path: String, ignoreSuffixes: Array[String]): Boolean = {
+  def shouldIgnore(s: String, ignoreSuffixes: Array[String]): Boolean = {
     ignoreSuffixes
-      .exists(path.endsWith(_))
+      .exists(s.endsWith(_))
   }
 
   /**

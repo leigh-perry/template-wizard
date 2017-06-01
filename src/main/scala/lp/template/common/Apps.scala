@@ -37,7 +37,15 @@ object Apps {
     sw.toString
   }
 
-  def arrayToString[T](a:Array[T] ) : String = {
+  def arrayToString(array: Array[String]): String = {
+    val contents =
+      array
+        .map(str => "\"" + str + "\"")
+        .mkString(",")
+    s"[$contents]"
+  }
+
+  def arrayToString[T](a: Array[T]): String = {
     s"[${a.mkString(",")}]"
   }
 }

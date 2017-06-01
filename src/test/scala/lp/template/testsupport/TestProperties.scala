@@ -56,9 +56,8 @@ object TestProperties {
 
   def genPicksAlpha: Gen[(Map[String, String], List[String])] = {
     for {
-      validKeyValues <- nonEmptyMap[String, String](genNonEmptyAlphaPair)
-      validKeys = validKeyValues.keySet
-      invalidPicks <- listOf(genNonEmptyAlpha.suchThat(!validKeys.contains(_)))
-    } yield (validKeyValues, invalidPicks)
+      validKeysAndValues <- nonEmptyMap[String, String](genNonEmptyAlphaPair)
+      invalidPicks <- listOf(genNonEmptyAlpha.suchThat(!validKeysAndValues.contains(_)))
+    } yield (validKeysAndValues, invalidPicks)
   }
 }

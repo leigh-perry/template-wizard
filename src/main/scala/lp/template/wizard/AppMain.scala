@@ -42,12 +42,12 @@ object AppMain extends App {
     }
   }
 
-  private def executionPlan: (Array[(String, String)], Seq[(String, Task[Unit])]) = {
+  private def executionPlan: (Vector[(String, String)], Seq[(String, Task[Unit])]) = {
     val inputDir = templateDir()
     val destinationDirectory = destinationDir()
-    val substs: Array[(String, String)] = splitPairs(substitutions())
+    val substs: Vector[(String, String)] = splitPairs(substitutions())
 
-    val substVariants: Array[(String, String)] = variantsOf(substs)
+    val substVariants: Vector[(String, String)] = variantsOf(substs)
 
     val inputDirFile = new File(inputDir)
     val parentDir = inputDirFile.getParent
@@ -99,12 +99,13 @@ object AppMain extends App {
     (substVariants, tasks)
   }
 
-  def splitPairs(s: String): Array[(String, String)] = {
+  def splitPairs(s: String): Vector[(String, String)] = {
     s.trim match {
-      case "" => Array()
+      case "" => Vector()
       case trimmed@_ =>
         trimmed.split(",")
           .map(fromTo(_))
+          .toVector
     }
   }
 
@@ -118,9 +119,9 @@ object AppMain extends App {
     (terms(0), terms(1))
   }
 
-  private val dirIgnoreSuffixes = Array("/.git", "/target", "/.idea", "/.gradle", "/build", "/classes")
+  private val dirIgnoreSuffixes = Vector("/.git", "/target", "/.idea", "/.gradle", "/build", "/classes")
 
-  private val fileIgnoreSuffixes = Array("/.DS_Store", ".jar", ".class")
+  private val fileIgnoreSuffixes = Vector("/.DS_Store", ".jar", ".class")
 
   private def recursiveFileObjects(dir: File): Seq[File] = {
     var result = mutable.Buffer[File]()
@@ -146,7 +147,7 @@ object AppMain extends App {
     result
   }
 
-  def shouldIgnore(s: String, ignoreSuffixes: Array[String]): Boolean = {
+  def shouldIgnore(s: String, ignoreSuffixes: Vector[String]): Boolean = {
     ignoreSuffixes
       .exists(s.endsWith(_))
   }
@@ -154,14 +155,14 @@ object AppMain extends App {
   /**
     * Apply all replacements to specified string
     */
-  def expand(substs: Array[(String, String)], s: String) = {
+  def expand(substs: Vector[(String, String)], s: String) = {
     substs.foldLeft(s) {
       case (result, (from, to)) =>
         result.replaceAll(from, to)
     }
   }
 
-  def variantsOf(substs: Array[(String, String)]) = {
+  def variantsOf(substs: Vector[(String, String)]) = {
     substs
       .flatMap {
         case (from, to) => {
@@ -178,14 +179,13 @@ object AppMain extends App {
     val snakeMinusCase = (Ascii.classToMinusSnakeCase(from), Ascii.classToMinusSnakeCase(to))
     val methodCase = (Ascii.classToMethodCase(from), Ascii.classToMethodCase(to))
 
-    Array((from, to), lowerCase, upperCase, snakeCase, snakeUpperCase, snakeMinusCase, methodCase)
+    Vector((from, to), lowerCase, upperCase, snakeCase, snakeUpperCase, snakeMinusCase, methodCase)
   }
 
   private def ensureDirectoryExists(dir: String): Unit = {
     val dirFile = new File(dir)
     if (!dirFile.exists) {
-      val ok = dirFile.mkdirs
-      if (!ok) {
+      if (!dirFile.mkdirs) {
         throw new RuntimeException(s"Could not create dir [$dir]")
       }
 

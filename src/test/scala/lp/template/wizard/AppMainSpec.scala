@@ -55,7 +55,7 @@ class AppMainSpec extends FunSpec with Checkers {
       check {
         forAll(alphaStr) {
           s =>
-            s =? AppMain.expand(Array(), s)
+            s =? AppMain.expand(Vector(), s)
         }
       }
     }
@@ -63,7 +63,7 @@ class AppMainSpec extends FunSpec with Checkers {
     it("should handle case of a single substitution") {
       val input = "a SomeClass someclass SOMECLASS some_class some-class SOME_CLASS someClass"
       val expected = "a AnoTherThing anotherthing ANOTHERTHING ano_ther_thing ano-ther-thing ANO_THER_THING anoTherThing"
-      val substitutions = Array(("SomeClass", "AnoTherThing"))
+      val substitutions = Vector(("SomeClass", "AnoTherThing"))
       assertResult(expected)(AppMain.expand(AppMain.variantsOf(substitutions), input))
     }
 
@@ -76,7 +76,7 @@ class AppMainSpec extends FunSpec with Checkers {
           "a SecondExpected secondexpected SECONDEXPECTED second_expected second-expected SECOND_EXPECTED secondExpected"
 
       assertResult(expected) {
-        val substitutions = Array(("SomeClass", "AnoTherThing"), ("AThirdElement", "SecondExpected"))
+        val substitutions = Vector(("SomeClass", "AnoTherThing"), ("AThirdElement", "SecondExpected"))
         AppMain.expand(AppMain.variantsOf(substitutions), input)
       }
     }
@@ -92,7 +92,7 @@ class AppMainSpec extends FunSpec with Checkers {
           "a FhQ fhq FHQ fh_q fh-q FH_Q fhQ"
 
       assertResult(expected) {
-        val substitutions = Array(("SomeClass", "AnoTherThing"), ("AThirdElement", "SecondExpected"), ("FthE", "FhQ"))
+        val substitutions = Vector(("SomeClass", "AnoTherThing"), ("AThirdElement", "SecondExpected"), ("FthE", "FhQ"))
         AppMain.expand(AppMain.variantsOf(substitutions), input)
       }
     }
@@ -103,8 +103,8 @@ class AppMainSpec extends FunSpec with Checkers {
       check {
         forAll(genTwoTerm :| "from", genTwoTerm :| "to") {
           (from, to) =>
-            val variants = AppMain.variantsOf(Array((from, to)))
-            variants.deep ?= AppMain.rawVariants(from, to).deep
+            val variants = AppMain.variantsOf(Vector((from, to)))
+            variants ?= AppMain.rawVariants(from, to)
         }
       }
     }
@@ -113,11 +113,11 @@ class AppMainSpec extends FunSpec with Checkers {
       check {
         forAll(genTerm.suchThat(_.length > 1) :| "term 1", genTerm.suchThat(_.length > 1) :| "term 2") {
           (from, to) =>
-            val variants = AppMain.variantsOf(Array((from, to)))
+            val variants = AppMain.variantsOf(Vector((from, to)))
             val lowerCase = (from.toLowerCase, to.toLowerCase)
             val upperCase = (from.toUpperCase, to.toUpperCase)
-            val expected = Array((from, to), lowerCase, upperCase)
-            variants.deep ?= expected.deep
+            val expected = Vector((from, to), lowerCase, upperCase)
+            variants ?= expected
         }
       }
     }
@@ -126,10 +126,10 @@ class AppMainSpec extends FunSpec with Checkers {
       check {
         forAll(alphaUpperChar.map(_.toString), alphaUpperChar.map(_.toString)) {
           (from, to) =>
-            val variants = AppMain.variantsOf(Array((from, to)))
+            val variants = AppMain.variantsOf(Vector((from, to)))
             val lowerCase = (from.toLowerCase, to.toLowerCase)
-            val expected = Array((from, to), lowerCase)
-            variants.deep ?= expected.deep
+            val expected = Vector((from, to), lowerCase)
+            variants ?= expected
         }
       }
     }
@@ -175,6 +175,6 @@ class AppMainSpec extends FunSpec with Checkers {
   private[this] def ignorableSuffixesOf(ignorables: List[String]) = {
     ignorables
       .map(s => s"/$s")
-      .toArray
+      .toVector
   }
 }

@@ -2,8 +2,9 @@
 # Template Wizard
 ## About
 This simple app creates a replica of a directory performing string substitution. This is
-enough to create a new Java or Scala project based on an existing app (or a
-skeleton template app).
+enough to create a new Java, Kotlin, Scala etc project based on an existing app (or a
+skeleton template app). Or it be used for any other banal clone-transform task that can
+be expressed as a series of string substitutions.
 
 ## Build
 ```

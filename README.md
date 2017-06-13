@@ -11,7 +11,7 @@ be expressed as a series of string substitutions.
 sbt assembly
 ```
 
-or download [here](https://oss.sonatype.org/service/local/repositories/releases/content/com/github/leigh-perry/template-wizard_2.12/1.0.0/template-wizard_2.12-1.0.0.jar)
+or download the jar from [here](https://oss.sonatype.org/service/local/repositories/releases/content/com/github/leigh-perry/template-wizard_2.12/1.0.0/template-wizard_2.12-1.0.0.jar).
 
 ## Usage
 ```

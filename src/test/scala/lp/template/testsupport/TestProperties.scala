@@ -4,15 +4,6 @@ import org.scalacheck.Gen
 import org.scalacheck.Gen._
 
 object TestProperties {
-
-  object ArbitraryImplicits {
-    //implicit val arbNonEmptyAlphaPair: Arbitrary[(String, String)] = Arbitrary(genNonEmptyAlphaPair)
-  }
-
-  private def genAlphaLowerStrN(size: Int) = {
-    resize(size, listOf(alphaLowerStr))
-  }
-
   def genTerm: Gen[String] = {
     for {
       c <- alphaUpperChar
@@ -59,5 +50,14 @@ object TestProperties {
       validKeysAndValues <- nonEmptyMap[String, String](genNonEmptyAlphaPair)
       invalidPicks <- listOf(genNonEmptyAlpha.suchThat(!validKeysAndValues.contains(_)))
     } yield (validKeysAndValues, invalidPicks)
+  }
+
+
+  object ArbitraryImplicits {
+    //implicit val arbNonEmptyAlphaPair: Arbitrary[(String, String)] = Arbitrary(genNonEmptyAlphaPair)
+  }
+
+  private def genAlphaLowerStrN(size: Int) = {
+    resize(size, listOf(alphaLowerStr))
   }
 }

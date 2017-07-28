@@ -7,7 +7,7 @@ organization := "com.github.leigh-perry"
 name := "template-wizard"
 version := "1.0.1-SNAPSHOT"
 
-scalaVersion := "2.12.2"
+scalaVersion := "2.12.3"
 scalacOptions := Seq("-unchecked", "-deprecation", "-Xexperimental", "-feature")
 
 val VersionTwitterUtil = "6.43.0"
